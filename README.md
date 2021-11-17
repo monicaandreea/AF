@@ -1,7 +1,5 @@
 # AF
 
-Inca nu am facut o sursa unica pentru toti algoritmii, am doar pentru reprezentari(matrice si liste) si bfs si dfs standard, o sa adaug si algoritmii cu care am rezolvat problemele de mai jos.
-
 BFS:
 
 https://infoarena.ro/job_detail/2793419?action=view-source
