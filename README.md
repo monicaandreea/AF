@@ -22,11 +22,11 @@ https://infoarena.ro/job_detail/2793532?action=view-source
 
 Paduri de multimi disjuncte:
 
-https://www.infoarena.ro/job_detail/2802127?action=view-source
+https://www.infoarena.ro/job_detail/2802424?action=view-source
 
 Arbore partial de cost minim:
 
-https://www.infoarena.ro/job_detail/2801135?action=view-source
+https://www.infoarena.ro/job_detail/2802421?action=view-source
 
 Dijkstra:
 
