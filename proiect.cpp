@@ -3,8 +3,8 @@
 #include<vector>
 #include<map>
 #include<queue>
-std::ifstream f("date.in");
-std::ofstream fg("date.out");
+std::ifstream f("dijkstra.in");
+std::ofstream fg("dijkstra.out");
 int n, m, a, b,c;
 
 class graf{
@@ -55,10 +55,9 @@ public:
     int find_set(int nod, std::vector<int> &tata);
     void union_set(int nod1, int nod2, std::vector<int> &tata, std::vector<int> adancime);
 
+    void kruskal();
     void dijkstra();
     void bellmanford();
-
-
 
 };
 
@@ -264,7 +263,7 @@ bool graf::havel_hakimi_verificare(std::vector<int> &secv){
         for(int i= 0; i< cnt ; i++){
             secv[i]--;
 
-            if(secv[nr] < 0) return false;
+            if(secv[i] < 0) return false;
 
         }
 
@@ -273,7 +272,7 @@ bool graf::havel_hakimi_verificare(std::vector<int> &secv){
         std::cout<<"\n";
 
     }
-
+return true;
 }
 
 void graf::havel_hakimi(){
@@ -455,9 +454,6 @@ void graf::union_set(int nod1, int nod2, std::vector<int> &tata, std::vector<int
 
         if(adancime[nod1] == adancime[nod2]) adancime[nod1]++;
     }
-
-    nod1 = find_set(nod1, tata);
-    nod2 = find_set(nod2, tata);
 }
 
 void graf::disjoint(){
@@ -485,6 +481,45 @@ void graf::disjoint(){
             else fg<<"DA\n";
         }
     }
+
+}
+
+void graf::kruskal() {
+    std::vector< std::pair< int, std::pair<int, int>> > muchii;
+    std::vector< std::pair< int, std::pair<int, int>> > apm;
+    std::vector<int> id;
+    int sum = 0;
+
+    for(auto i=0 ; i<n ; i++){
+        for( auto j = lista_cost[i].begin() ; j != lista_cost[i].end(); j++){
+            muchii.push_back( std::make_pair( j->second, std::make_pair(i, j->first)) );
+        }
+
+        id.push_back(i);
+    }
+
+    std::sort(muchii.begin() , muchii.end());
+
+    for(auto i = muchii.begin() ; i!= muchii.end() ; i++){
+        if( id[i->second.first] != id[i->second.second] ){
+            sum = sum + i->first;
+            apm.push_back( *i );
+
+            int id_vechi = id[i->second.first];
+            int id_nou = id[i->second.second];
+
+            for(int i = 0 ; i<n ; i++){
+                if( id[i] == id_vechi ) id[i] = id_nou;
+            }
+        }
+    }
+
+    fg<<sum<<"\n"<<apm.size()<<"\n";
+
+    for(auto i = apm.begin() ; i!= apm.end() ; i++) {
+        fg<<i->second.first + 1<<" "<<i->second.second + 1<<"\n";
+    }
+
 
 }
 
@@ -593,19 +628,21 @@ void graf::dijkstra(){
 
 }
 
+
+
 int main() {
     f>>n>>m;
 
     graf g(n, m);
     for(int i=0 ; i<m ; i++){
-        f>>a>>b;
-        g.new_lista(a-1,b-1);
+        /*f>>a>>b;
+        g.new_lista(a-1,b-1); */
         // g.new_mat(a, b);
        // g.new_muchii(a, b);
 
 
-        /*f>>a>>b>>c;
-        g.new_lista_cost(a-1, b-1, c); */
+        f>>a>>b>>c;
+        g.new_lista_cost(a-1, b-1, c);
 
     }
  /*
@@ -624,8 +661,9 @@ int main() {
     //g.biconex();
 
     //g.disjoint();
+    //g.kruskal();
     //g.bellmanford();
-    //g.dijkstra();
+    g.dijkstra();
 
     return 0;
 }
