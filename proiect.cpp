@@ -3,81 +3,81 @@
 #include<vector>
 #include<map>
 #include<queue>
-std::ifstream f("dijkstra.in");
-std::ofstream fg("dijkstra.out");
-int n, m, a, b,c;
+
+int n, m, a, b,c, s;
 
 class graf{
 public:
-    int n, m;
-
-    graf(int n, int m);
-
-    //std::vector< bool> viz;
     std::vector< std::vector<int> > mat;
-    std::vector<std::vector<int> > lista;
-    std::vector<std::vector< std::pair<int, int>> > lista_cost;
+    std::vector< std::vector<int> > lista;
+    std::vector< std::vector< std::pair<int, int>> > lista_cost;
     std::vector< std::pair<int, int> > muchii;
 
+    void solve_DFS_componente_conexe();
+    void solve_bfs();
+    void solve_sortare_topologica();
+    void solve_havel_hakimi();
+    void solve_comp_conex();
+    void solve_biconex();
+    void solve_disjoint();
+    void solve_kruskal();
+    void solve_dijkstra();
+    void solve_bellmanford();
+    void solve_royfloyd();
+    void solve_darb();
+    void solve_maxflow();
+
+private:
     void new_mat( int nod1, int nod2);
     void new_lista( int nod1, int nod2);
+    void new_lista_orientat(int nod1, int nod2);
     void new_lista_cost( int nod1, int nod2, int cost);
+    void new_lista_cost_neorientat(int nod1, int nod2, int cost);
     void new_muchii( int nod1, int nod2);
 
-    void afisare_mat();
+    void afisare_mat(std::ostream &fg);
     void afisare_lista();
     void afisare_lista_cost();
     void afisare_muchii();
-
     void sortare_lista();
 
     void dfs(int nod, std::vector<bool> &viz);
-    int DFS_componente_conexe();
 
-    void bfs(int nod);
+    void bfs(int nod, std::vector<bool> &viz, std::vector<int> &dist);
 
     void dfs_sortare_topologica(int nod, std::deque<int> &coada, std::vector<int> &viz);
-    void sortare_topologica();
 
     bool havel_hakimi_verificare(std::vector<int> &secv);
-    void havel_hakimi();
+
 
     void dfs_comp_conex(int nod, int &nr_comp_conex, std::vector<int> &low, std::vector<int> &membru, std::vector<int> &viz,
                         std::vector<std::vector<int> > &componente, std::deque<int> &st);
-    void comp_conex();
 
-    void biconex();
     void dfs_biconex(int nod, int &nr_comp_biconex, std::vector<int> &viz, std::vector<int> &low, std::vector<int> &tata,
                      std::deque<int> &st, std::deque<std::pair<int, int>> &perechi,
                      std::vector<std::set<int>> &componente);
 
-    void disjoint();
+
     int find_set(int nod, std::vector<int> &tata);
     void union_set(int nod1, int nod2, std::vector<int> &tata, std::vector<int> adancime);
 
-    void kruskal();
-    void dijkstra();
-    void bellmanford();
+    void royfloyd();
+
+    std::pair<int, int> BFS_darb(int start);
+
+    int BFS_maxflow(int start, int dest, std::vector<int> &tata, std::vector<std::vector<int>> &cap);
+
+    void dijkstra(int start, std::vector<int> &dist);
+
+    void bellmanford(int start, std::vector<int> &dist, bool neg);
+
+
+    void
+    kruskal(std::vector<std::pair<int, std::pair<int, int>>> &apm,
+            std::vector<std::pair<int, std::pair<int, int>>> &muchii,
+            int &sum);
 
 };
-
-graf::graf(int n, int m) {
-    this->n = n;
-    this->m = m;
-
-    std::vector<int> v;
-    std::vector< std::pair<int, int>> p;
-
-    for(auto i = 0; i<n ; i++){
-        lista.push_back(v);
-        mat.push_back(v);
-        lista_cost.push_back(p);
-        for(auto j = 0; j<n ; j++){
-            mat.at(i).push_back(0);
-        }
-    }
-
-}
 
 void graf::new_mat(int nod1, int nod2) {
     mat[nod1-1][nod2-1] = 1;
@@ -89,9 +89,17 @@ void graf::new_lista(int nod1, int nod2){
     lista[nod2].push_back(nod1);
 }
 
+void graf::new_lista_orientat(int nod1, int nod2){
+    lista[nod1].push_back(nod2);
+}
+
 void graf::new_lista_cost(int nod1, int nod2, int cost) {
     lista_cost[nod1].push_back(std::make_pair(nod2, cost));
-    //lista_cost[nod2].push_back(std::make_pair(nod1, cost));
+}
+
+void graf::new_lista_cost_neorientat(int nod1, int nod2, int cost) {
+    lista_cost[nod1].push_back(std::make_pair(nod2, cost));
+    lista_cost[nod2].push_back(std::make_pair(nod1, cost));
 }
 
 void graf::new_muchii( int nod1, int nod2) {
@@ -103,15 +111,13 @@ void graf::sortare_lista() {
         std::sort(lista[i].begin(), lista[i].end());
 }
 
-void graf::afisare_mat() {
+void graf::afisare_mat(std::ostream& fg) {
     for(auto i=0; i<n; i++){
         for(auto j=0 ; j<n; j++){
-            std::cout<<mat[i][j]<<" ";
+            fg<<mat[i][j]<<" ";
         }
-        std::cout<<"\n";
+        fg<<"\n";
     }
-
-    std::cout<<"\n";
 }
 
 void graf::afisare_lista() {
@@ -152,11 +158,23 @@ void graf::dfs(int nod, std::vector<bool> &viz){
         if(!viz[*i]) dfs(*i, viz);
 }
 
-int graf::DFS_componente_conexe() {
+void graf::solve_DFS_componente_conexe() {
+    std::ifstream f("dfs.in");
+    std::ofstream fg("dfs.out");
+
     std::vector< bool> viz;
+    std::vector<int> v;
+
+    f>>n>>m;
 
     for(auto i = 0 ; i<=n ; i++) {
         viz.push_back(false);
+        lista.push_back(v);
+    }
+
+    for(int i=0 ; i<m ; i++){
+        f>>a>>b;
+        new_lista(a,b);
     }
 
     int cnt = 0;
@@ -166,19 +184,11 @@ int graf::DFS_componente_conexe() {
             dfs(i, viz);
         }
 
-    return cnt;
+    fg<< cnt;
 }
 
-void graf::bfs(int nod){
+void graf::bfs(int nod, std::vector< bool> &viz, std::vector< int> &dist){
     std::queue<int> coada;
-    std::vector< bool> viz;
-    std::vector<int> dist;
-
-    for(auto i = 0 ; i<=n ; i++) {
-        viz.push_back(false);
-        dist.push_back(-1);
-    }
-
     viz[nod] = true;
     dist[nod] = 0;
     coada.push(nod);
@@ -196,8 +206,31 @@ void graf::bfs(int nod){
             }
         }
     }
+}
 
-    //std::cout<<"\n";
+void graf::solve_bfs(){
+    std::ifstream f("bfs.in");
+    std::ofstream fg("bfs.out");
+
+    std::vector< bool> viz;
+    std::vector<int> dist;
+    std::vector<int> v;
+
+    f>>n>>m>>s;
+
+    for(auto i = 0 ; i<=n ; i++) {
+        viz.push_back(false);
+        dist.push_back(-1);
+        lista.push_back(v);
+    }
+
+    for(int i=0 ; i<m ; i++){
+        f>>a>>b;
+        new_lista_orientat(a,b);
+    }
+
+    bfs(s, viz, dist);
+
     for(int i = 1; i <= n; i++)
         fg<<dist[i]<<" ";
 
@@ -214,17 +247,24 @@ void graf::dfs_sortare_topologica(int nod, std::deque<int> &coada, std::vector<i
     coada.push_back(nod);
 }
 
-void graf::sortare_topologica(){
+void graf::solve_sortare_topologica(){
+    std::ifstream f("sortaret.in");
+    std::ofstream fg("sortaret.out");
+
     std::vector<int> viz;
     std::deque<int> coada;
+    std::vector<int> v;
+
+    f>>n>>m;
 
     for(auto i = 0 ; i<=n ; i++){
         viz.push_back(-1);
+        lista.push_back(v);
     }
 
-
-    for(auto i = 0 ; i<=n ; i++){
-        viz.push_back(-1);
+    for(int i=0 ; i<m ; i++){
+        f>>a>>b;
+        new_lista(a-1,b-1);
     }
 
     for(int i = 0 ; i< n ; i++){
@@ -275,7 +315,9 @@ bool graf::havel_hakimi_verificare(std::vector<int> &secv){
 return true;
 }
 
-void graf::havel_hakimi(){
+void graf::solve_havel_hakimi(){
+    std::ifstream f("hh.in");
+    std::ofstream fg("hh.out");
     std::vector<int> secv;
     f>>n;
     for(int i = 0 ; i<n ; i++){
@@ -331,7 +373,10 @@ void graf::dfs_comp_conex(int nod, int &nr_comp_conex, std::vector<int> &low, st
 
 }
 
-void graf::comp_conex(){
+void graf::solve_comp_conex(){
+    std::ifstream f("ctc.in");
+    std::ofstream fg("ctc.out");
+
     std::vector<int> viz;
     std::vector<int> low;
     std::vector<int> membru;
@@ -340,11 +385,19 @@ void graf::comp_conex(){
 
     int nr_comp_conex = 0;
 
+    f>>n>>m;
+
     std::vector<int> v;
     for(auto i = 0 ; i<=n ; i++){
         viz.push_back(-1);
         low.push_back(-1);
         membru.push_back(0);
+        lista.push_back(v);
+    }
+
+    for(int i=0 ; i<m ; i++){
+        f>>a>>b;
+        new_lista_orientat(a-1,b-1);
     }
 
     for(int i = 0 ; i< n ; i++){
@@ -409,20 +462,34 @@ void graf::dfs_biconex(int nod, int &nr_comp_biconex, std::vector<int> &viz, std
 
 }
 
-void graf::biconex(){
+void graf::solve_biconex(){
+    std::ifstream f("biconex.in");
+    std::ofstream fg("biconex.out");
+
     std::vector<std::set<int>> componente;
     std::vector<int> viz;
     std::vector<int> low;
     std::vector<int> tata;
     std::deque<int> st;
     std::deque<std::pair<int, int>> perechi;
+    std::vector<int> v;
     int nr_comp_biconex = 0;
+
+    f>>n>>m;
 
     for(auto i = 0 ; i<=n ; i++) {
         viz.push_back(-1);
         low.push_back(-1);
         tata.push_back(-1);
+        lista.push_back(v);
     }
+
+    for(int i=0 ; i<m ; i++){
+        f>>a>>b;
+        new_lista(a-1,b-1);
+    }
+
+
 
     for(int i = 0 ; i< n ; i++){
         if(viz[i] == -1) dfs_biconex(i, nr_comp_biconex, viz, low, tata, st, perechi, componente );
@@ -456,10 +523,15 @@ void graf::union_set(int nod1, int nod2, std::vector<int> &tata, std::vector<int
     }
 }
 
-void graf::disjoint(){
+void graf::solve_disjoint(){
+    std::ifstream f("disjoint.in");
+    std::ofstream fg("disjoint.out");
+
     std::vector<int> tata;
     std::vector<int> adancime;
     int op;
+
+    f>>n>>m;
 
     for(auto i = 0 ; i<=n ; i++){
         tata.push_back(i);
@@ -484,11 +556,8 @@ void graf::disjoint(){
 
 }
 
-void graf::kruskal() {
-    std::vector< std::pair< int, std::pair<int, int>> > muchii;
-    std::vector< std::pair< int, std::pair<int, int>> > apm;
+void graf::kruskal(std::vector< std::pair< int, std::pair<int, int>> > &apm, std::vector< std::pair< int, std::pair<int, int>> > &muchii, int &sum){
     std::vector<int> id;
-    int sum = 0;
 
     for(auto i=0 ; i<n ; i++){
         for( auto j = lista_cost[i].begin() ; j != lista_cost[i].end(); j++){
@@ -513,6 +582,29 @@ void graf::kruskal() {
             }
         }
     }
+}
+
+void graf::solve_kruskal() {
+    std::ifstream f("apm.in");
+    std::ofstream fg("apm.out");
+
+    std::vector< std::pair< int, std::pair<int, int>> > muchii;
+    std::vector< std::pair< int, std::pair<int, int>> > apm;
+    std::vector< std::pair<int, int>> p;
+    int sum = 0;
+
+    f>>n>>m;
+
+    for( int i=0 ; i<n ; i++){
+        lista_cost.push_back(p);
+    }
+
+    for(int i=0 ; i<m ; i++){
+        f>>a>>b>>c;
+        new_lista_cost_neorientat(a-1, b-1, c);
+    }
+
+    kruskal(apm,muchii, sum);
 
     fg<<sum<<"\n"<<apm.size()<<"\n";
 
@@ -523,24 +615,20 @@ void graf::kruskal() {
 
 }
 
-void graf::bellmanford(){
-    std::vector<int> dist;
-    std::queue<int> coada;
+void graf::bellmanford(int start, std::vector<int> &dist, bool neg){
     std::vector<bool> viz;
     std::vector<int> ord;
-
+    std::queue<int> coada;
 
     for( int i=0 ; i<n ; i++)
     {
-        dist.push_back(INT_MAX);
         viz.push_back(false);
         ord.push_back(0);
     }
 
-    bool neg = false;
-    dist[0] = 0;
-    coada.push(0);
-    viz[0] = true;
+    dist[start] = 0;
+    coada.push(start);
+    viz[start] = true;
 
     while(!coada.empty() && !neg) {
         int nod = coada.front();
@@ -572,6 +660,30 @@ void graf::bellmanford(){
         }
 
     }
+}
+
+void graf::solve_bellmanford(){
+    std::ifstream f("bellmanford.in");
+    std::ofstream fg("bellmanford.out");
+
+    std::vector<int> dist;
+    std::vector< std::pair<int, int>> p;
+    bool neg = false;
+
+    f>>n>>m;
+
+    for( int i=0 ; i<n ; i++)
+    {
+        dist.push_back(INT_MAX);
+        lista_cost.push_back(p);
+    }
+
+    for(int i=0 ; i<m ; i++){
+        f>>a>>b>>c;
+        new_lista_cost(a-1, b-1, c);
+    }
+
+    bellmanford(0, dist, neg);
 
     if(neg) fg<<"Ciclu negativ!";
     else
@@ -583,19 +695,8 @@ void graf::bellmanford(){
 
 }
 
-void graf::dijkstra(){
-    std::vector<int> tata;
-    std::vector<int> dist;
-    std::vector<bool> viz;
-
-    for( int i=0 ; i<n ; i++)
-    {
-        dist.push_back(INT_MAX);
-        viz.push_back(false);
-        tata.push_back(-1);
-    }
-
-    dist[0] = 0;
+void graf::dijkstra(int start, std::vector<int> &dist){
+    dist[start] = 0;
 
     std::set<std::pair<int, int>> s;
 
@@ -613,11 +714,37 @@ void graf::dijkstra(){
             if(dist[vecin] > dist[nod] + cost){
                 s.erase(std::make_pair(dist[vecin], vecin));
                 dist[vecin] = cost + dist[nod];
-                tata[vecin] = nod;
                 s.insert(std::make_pair(dist[vecin], vecin));
             }
         }
     }
+}
+
+void graf::solve_dijkstra(){
+    std::ifstream f("dijkstra.in");
+    std::ofstream fg("dijkstra.out");
+
+    f>>n>>m;
+
+    std::vector<int> tata;
+    std::vector<int> dist;
+    std::vector<bool> viz;
+    std::vector< std::pair<int, int>> p;
+
+    for( int i=0 ; i<n ; i++)
+    {
+        dist.push_back(INT_MAX);
+        viz.push_back(false);
+        tata.push_back(-1);
+        lista_cost.push_back(p);
+    }
+
+    for(int i=0 ; i<m ; i++){
+        f>>a>>b>>c;
+        new_lista_cost(a-1, b-1, c);
+    }
+
+    dijkstra(0, dist);
 
     for(int i = 1; i<n ; i++)
     {
@@ -625,45 +752,188 @@ void graf::dijkstra(){
         else fg<<dist[i]<<" ";
     }
 
+}
+
+void graf::royfloyd(){
+    for(int i=0 ; i<n; i++)
+        for(int j=0 ; j<n; j++)
+            for(int k=0 ; k<n; k++)
+                if(mat[j][i] && mat[i][k] && (mat[j][k] > mat[j][i] + mat[i][k] || !mat[j][k]) && j!=k)
+                    mat[j][k] = mat[j][i] + mat[i][k];
+}
+
+void graf::solve_royfloyd() {
+    std::ifstream f("royfloyd.in");
+    std::ofstream fg("royfloyd.out");
+
+    f>>n;
+
+    std::vector<int> v(n,0);
+
+    for(auto i = 0; i<n ; i++){
+        mat.push_back(v);
+    }
+
+    for( int i=0 ; i<n ; i++){
+        for( int j=0 ; j<n ; j++){
+            f>>a;
+            mat[i][j] = a;
+        }
+    }
+
+    royfloyd();
+
+    afisare_mat( fg);
 
 }
 
+std::pair<int, int> graf::BFS_darb(int start){
+    std::vector<int> v;
+    std::vector<int> viz;
+    std::vector<int> dist;
+    std::queue<int> coada;
+    int diametru;
+    int dest;
 
+    for(int i = 0; i<n ; i++){
+        viz.push_back(-1);
+        dist.push_back(0);
+    }
 
-int main() {
+    viz[start] = 1;
+    coada.push(start);
+    dist[start] = 1;
+
+    while( !coada.empty()){
+        int nod = coada.front();
+        coada.pop();
+
+        for(auto vecin = lista[nod].begin() ; vecin != lista[nod].end(); vecin++){
+            if(viz[*vecin] == -1){
+                coada.push(*vecin);
+                viz[*vecin] = 1;
+                dist[*vecin] = dist[nod] + 1;
+
+                diametru = dist[*vecin];
+                dest = *vecin;
+            }
+        }
+    }
+
+    return std::make_pair(diametru, dest);
+}
+
+void graf::solve_darb() {
+    std::ifstream f("darb.in");
+    std::ofstream fg("darb.out");
+
+    f>>n;
+
+    std::vector<int> v;
+    int diametru, dest ;
+    std::pair<int, int> s;
+
+    for(int i = 0; i<n ; i++){
+        lista.push_back(v);
+    }
+
+    for( int i=0 ; i<n-1 ; i++){
+        f>>a>>b;
+        lista[a-1].push_back(b-1);
+        lista[b-1].push_back(a-1);
+    }
+
+    s = BFS_darb(0);
+    dest = s.second;
+    s = BFS_darb(dest);
+    diametru = s.first;
+    fg<<diametru;
+
+}
+
+int graf::BFS_maxflow(int start, int dest, std::vector<int> &tata, std::vector<std::vector<int>> &cap){
+    std::queue<std::pair<int, int>> coada;
+    for(int i=0 ; i<n ; i++){
+        tata[i] = -1;
+    }
+
+    tata[start] = -2;
+
+    coada.push(std::make_pair(start, INT_MAX));
+
+    while(!coada.empty()){
+
+        int nod = coada.front().first;
+        int flux = coada.front().second;
+        coada.pop();
+
+        for(auto vecin = lista[nod].begin(); vecin != lista[nod].end(); vecin++){
+            //std::cout<<nod<<" "<<*vecin<<" "<<cap[nod][*vecin]<<"\n";
+            if( tata[*vecin] == -1 && cap[nod][*vecin] >0){
+                tata[*vecin] = nod;
+
+                int flux_nou = std::min(flux, cap[nod][*vecin]);
+
+                if( *vecin == dest) return flux_nou;
+
+                coada.push(std::make_pair(*vecin, flux_nou));
+            }
+        }
+    }
+    return 0;
+}
+
+void graf::solve_maxflow() {
+    std::ifstream f("maxflow.in");
+    std::ofstream fg("maxflow.out");
+
     f>>n>>m;
 
-    graf g(n, m);
-    for(int i=0 ; i<m ; i++){
-        /*f>>a>>b;
-        g.new_lista(a-1,b-1); */
-        // g.new_mat(a, b);
-       // g.new_muchii(a, b);
+    std::vector<std::vector<int> > cap;
+    std::vector<int> tata(n,0);
+    std::vector<int> v(n,0);
+    std::vector<int> l;
+    int start=0;
+    int dest=n-1;
 
-
-        f>>a>>b>>c;
-        g.new_lista_cost(a-1, b-1, c);
-
+    for(auto i = 0; i<n ; i++){
+        lista.push_back(l);
+        cap.push_back(v);
     }
- /*
-    std::cout<<"Lista de adiacenta:\n";
-    g.afisare_lista();
-    std::cout<<"Matricea de adiacenta:\n";
-    g.afisare_mat();
-    std::cout<<"Lista de muchii:\n";
-    g.afisare_muchii();*/
 
-    //fg<<g.DFS_componente_conexe();
-    //g.bfs();
+    for( int i=0 ; i<m ; i++){
+        f>>a>>b>>c;
+        lista[a-1].push_back(b-1);
+        cap[a-1][b-1] = c;
+    }
 
-    //g.comp_conex();
-    //g.sortare_topologica();
-    //g.biconex();
+    int flux = 0;
 
-    //g.disjoint();
-    //g.kruskal();
-    //g.bellmanford();
-    g.dijkstra();
+    int flux_nou = BFS_maxflow(start, dest, tata, cap);
+    while(flux_nou){
+
+        flux += flux_nou;
+        int nod = dest;
+
+        while(nod != start){
+            int t = tata[nod];
+            cap[t][nod] -= flux_nou; //actualizezi flowul gasit  + muchiile de intoarcere
+            cap[nod][t] += flux_nou;
+            nod = t;
+        }
+
+
+        flux_nou = BFS_maxflow(start, dest, tata, cap);
+    }
+
+    fg<<flux;
+
+}
+
+int main() {
+    graf g;
+
+    g.solve_bfs();
 
     return 0;
 }
