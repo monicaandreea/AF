@@ -8,7 +8,7 @@ int n, m, a, b,c, s;
 
 class graf{
 public:
-    std::vector< std::vector<int> > mat;
+    int mat[101][101];
     std::vector< std::vector<int> > lista;
     std::vector< std::vector< std::pair<int, int>> > lista_cost;
     std::vector< std::pair<int, int> > muchii;
@@ -17,11 +17,11 @@ public:
     void solve_bfs();
     void solve_sortare_topologica();
     void solve_havel_hakimi();
-    void solve_comp_conex();
+    void solve_comp_tare_conex();
     void solve_biconex();
     void solve_disjoint();
     void solve_kruskal();
-    void solve_dijkstra();
+    void solve_dijkstra(int start);
     void solve_bellmanford();
     void solve_royfloyd();
     void solve_darb();
@@ -49,8 +49,7 @@ private:
 
     bool havel_hakimi_verificare(std::vector<int> &secv);
 
-
-    void dfs_comp_conex(int nod, int &nr_comp_conex, std::vector<int> &low, std::vector<int> &membru, std::vector<int> &viz,
+    void dfs_comp_tare_conex(int nod, int &nr_comp_conex, std::vector<int> &low, std::vector<int> &membru, std::vector<int> &viz,
                         std::vector<std::vector<int> > &componente, std::deque<int> &st);
 
     void dfs_biconex(int nod, int &nr_comp_biconex, std::vector<int> &viz, std::vector<int> &low, std::vector<int> &tata,
@@ -71,11 +70,8 @@ private:
 
     void bellmanford(int start, std::vector<int> &dist, bool neg);
 
-
-    void
-    kruskal(std::vector<std::pair<int, std::pair<int, int>>> &apm,
-            std::vector<std::pair<int, std::pair<int, int>>> &muchii,
-            int &sum);
+    void kruskal(std::vector<std::pair<int, std::pair<int, int>>> &apm,
+            std::vector<std::pair<int, std::pair<int, int>>> &muchii, int &sum);
 
 };
 
@@ -158,6 +154,8 @@ void graf::dfs(int nod, std::vector<bool> &viz){
         if(!viz[*i]) dfs(*i, viz);
 }
 
+//O(n + m)
+
 void graf::solve_DFS_componente_conexe() {
     std::ifstream f("dfs.in");
     std::ofstream fg("dfs.out");
@@ -208,6 +206,8 @@ void graf::bfs(int nod, std::vector< bool> &viz, std::vector< int> &dist){
     }
 }
 
+//O(m + n)
+
 void graf::solve_bfs(){
     std::ifstream f("bfs.in");
     std::ofstream fg("bfs.out");
@@ -246,6 +246,9 @@ void graf::dfs_sortare_topologica(int nod, std::deque<int> &coada, std::vector<i
 
     coada.push_back(nod);
 }
+
+// O(n + m)
+// la intoarcerea din dfs, adaugam nodul intr-o coada
 
 void graf::solve_sortare_topologica(){
     std::ifstream f("sortaret.in");
@@ -315,6 +318,8 @@ bool graf::havel_hakimi_verificare(std::vector<int> &secv){
 return true;
 }
 
+// O( n^2 * log n)
+
 void graf::solve_havel_hakimi(){
     std::ifstream f("hh.in");
     std::ofstream fg("hh.out");
@@ -330,7 +335,7 @@ void graf::solve_havel_hakimi(){
 
 }
 
-void graf::dfs_comp_conex(int nod, int &nr_comp_conex, std::vector<int> &low, std::vector<int> &membru, std::vector<int> &viz,
+void graf::dfs_comp_tare_conex(int nod, int &nr_comp_conex, std::vector<int> &low, std::vector<int> &membru, std::vector<int> &viz,
                           std::vector<std::vector<int> > &componente, std::deque<int> &st){
     static int cnt = 0;
     viz[nod] = ++cnt;
@@ -340,7 +345,7 @@ void graf::dfs_comp_conex(int nod, int &nr_comp_conex, std::vector<int> &low, st
 
     for( auto i = lista[nod].begin(); i != lista[nod].end(); i++) {
         if (viz[*i] == -1) {
-            dfs_comp_conex(*i, nr_comp_conex, low, membru, viz, componente, st);
+            dfs_comp_tare_conex(*i, nr_comp_conex, low, membru, viz, componente, st);
             low[nod] = fmin(low[nod], low[*i]);
         } else if (membru[*i] == 1) {
             low[nod] = fmin(low[nod], viz[*i]);
@@ -373,7 +378,14 @@ void graf::dfs_comp_conex(int nod, int &nr_comp_conex, std::vector<int> &low, st
 
 }
 
-void graf::solve_comp_conex(){
+// O(n+m)
+// o componenta este tare conexa daca exista cel putin un drum de la un nod la oricare altul
+// ne folosim de doi vectori:
+// low: reprezinta nodul de grad cel mai mic la care nodul curent poate ajunge
+// viz: ordinea in care am vizitat nodurile (gradul)
+// cand ne intoarcem din dfs, daca low[vecin] == low[nod curent] => componenta tare conexa
+
+void graf::solve_comp_tare_conex(){
     std::ifstream f("ctc.in");
     std::ofstream fg("ctc.out");
 
@@ -401,7 +413,7 @@ void graf::solve_comp_conex(){
     }
 
     for(int i = 0 ; i< n ; i++){
-        if(viz[i] == -1) dfs_comp_conex(i, nr_comp_conex, low, membru, viz, componente, st);
+        if(viz[i] == -1) dfs_comp_tare_conex(i, nr_comp_conex, low, membru, viz, componente, st);
     }
 
     fg<<nr_comp_conex<<"\n";
@@ -433,21 +445,19 @@ void graf::dfs_biconex(int nod, int &nr_comp_biconex, std::vector<int> &viz, std
             dfs_biconex(*i, nr_comp_biconex, viz, low, tata, st, perechi, componente );
 
             low[nod] = fmin(low[nod], low[*i]);
-            //  std::cout <<nod<<" si "<<*i<< "\n";
-            //  std::cout <<viz[nod]<<" si "<<low[*i]<< "\n";
 
             if ( low[*i] >= viz[nod]) { //e punct de articulatie
                 componente.push_back(s);
 
+               // std::cout<<*i<<" "<<nod<<"\n";
+
                 while (perechi.back().first != nod || perechi.back().second != *i) {
                     componente[nr_comp_biconex].insert(perechi.back().first);
                     componente[nr_comp_biconex].insert(perechi.back().second);
-                    //std::cout << perechi.back().first << " " << perechi.back().second << " ";
                     perechi.pop_back();
                 }
                 componente[nr_comp_biconex].insert(perechi.back().first);
                 componente[nr_comp_biconex].insert(perechi.back().second);
-                //std::cout << perechi.back().first << " " << perechi.back().second << " ";
                 perechi.pop_back();
 
                 ++nr_comp_biconex;
@@ -461,6 +471,13 @@ void graf::dfs_biconex(int nod, int &nr_comp_biconex, std::vector<int> &viz, std
     }
 
 }
+
+//o(m + n)
+// o componenta este biconexa daca exista un ciclu intre oricare doua noduri
+// ne folosim de doi vectori:
+// low: reprezinta nodul de grad cel mai mic la care nodul curent poate ajunge
+// viz: ordinea in care am vizitat nodurile (gradul)
+// cand ne intoarcem din dfs, daca low[vecin] >= low[nod curent] => punct de articulatie => componenta biconexa
 
 void graf::solve_biconex(){
     std::ifstream f("biconex.in");
@@ -488,8 +505,6 @@ void graf::solve_biconex(){
         f>>a>>b;
         new_lista(a-1,b-1);
     }
-
-
 
     for(int i = 0 ; i< n ; i++){
         if(viz[i] == -1) dfs_biconex(i, nr_comp_biconex, viz, low, tata, st, perechi, componente );
@@ -522,6 +537,11 @@ void graf::union_set(int nod1, int nod2, std::vector<int> &tata, std::vector<int
         if(adancime[nod1] == adancime[nod2]) adancime[nod1]++;
     }
 }
+
+// O(log n) pentru union
+// o(1) pentru verificare
+// pentru union => gasim tatal fiecarui nod, daca sunt diferiti unim arborele mai mic la cel mai mare
+// pentru verificare => gasim tatal fiecarui nod si comparam
 
 void graf::solve_disjoint(){
     std::ifstream f("disjoint.in");
@@ -584,6 +604,11 @@ void graf::kruskal(std::vector< std::pair< int, std::pair<int, int>> > &apm, std
     }
 }
 
+// O(m log(n) + m log(n))
+// am reorganizat muchiile ( cost, (nod1, nod2)) si le-am sortat
+// pentru fiecare muchie vedem daca capetele sunt in componente conexe diferite
+// caz in care, adaugam muchia in arbore si punem toate nodurile din componenta veche in cea noua
+
 void graf::solve_kruskal() {
     std::ifstream f("apm.in");
     std::ofstream fg("apm.out");
@@ -639,7 +664,6 @@ void graf::bellmanford(int start, std::vector<int> &dist, bool neg){
 
             if (dist[nod] < INT_MAX) {
 
-
                 int vecin = i->first;
                 int cost = i->second;
 
@@ -647,7 +671,7 @@ void graf::bellmanford(int start, std::vector<int> &dist, bool neg){
                     dist[vecin] = dist[nod] + cost;
 
                     if (!viz[vecin]) {
-                        if( ord[vecin] > n) neg = true;
+                        if( ord[vecin] > n) neg = true; // detecteaza ciclu neg
                         else{
                             coada.push(vecin);
                             viz[vecin] = true;
@@ -655,12 +679,16 @@ void graf::bellmanford(int start, std::vector<int> &dist, bool neg){
                         }
                     }
                 }
-
             }
         }
-
     }
 }
+
+// O(m*n)
+// Similar cu dijkstra doar ca functioneaza pe numere negative
+// avem un vector de distanta si o coada
+// adaugam nodurile a caror distanta a fost modificata in coada si verificam vecinii
+// pentru ciclu negativ tinem cont de cate ori a fost vizitat un nod (depaseste n => ciclu)
 
 void graf::solve_bellmanford(){
     std::ifstream f("bellmanford.in");
@@ -700,7 +728,7 @@ void graf::dijkstra(int start, std::vector<int> &dist){
 
     std::set<std::pair<int, int>> s;
 
-    s.insert( std::make_pair(0, 0));
+    s.insert( std::make_pair(start, 0));
 
     while(!s.empty()){
         int nod = s.begin()->second;
@@ -720,7 +748,12 @@ void graf::dijkstra(int start, std::vector<int> &dist){
     }
 }
 
-void graf::solve_dijkstra(){
+// O(mlogn)
+// avem un vector de distante si un set
+// in set tinem perechi de (nod, distanta) unde se afla nodurile care au fost modificate
+// pentru care verificam pe rand vecinii pentru a vedea daca se pot modifica si acestia
+
+void graf::solve_dijkstra(int start){
     std::ifstream f("dijkstra.in");
     std::ofstream fg("dijkstra.out");
 
@@ -744,12 +777,15 @@ void graf::solve_dijkstra(){
         new_lista_cost(a-1, b-1, c);
     }
 
-    dijkstra(0, dist);
+    dijkstra(start, dist);
 
-    for(int i = 1; i<n ; i++)
+    for(int i = 0; i<n ; i++)
     {
-        if(dist[i] == INT_MAX) fg<<"0 ";
-        else fg<<dist[i]<<" ";
+        if(i!= start){
+            if(dist[i] == INT_MAX) fg<<"0 ";
+            else fg<<dist[i]<<" ";
+        }
+
     }
 
 }
@@ -762,17 +798,13 @@ void graf::royfloyd(){
                     mat[j][k] = mat[j][i] + mat[i][k];
 }
 
+// O(n^3)
+
 void graf::solve_royfloyd() {
     std::ifstream f("royfloyd.in");
     std::ofstream fg("royfloyd.out");
 
     f>>n;
-
-    std::vector<int> v(n,0);
-
-    for(auto i = 0; i<n ; i++){
-        mat.push_back(v);
-    }
 
     for( int i=0 ; i<n ; i++){
         for( int j=0 ; j<n ; j++){
@@ -822,6 +854,9 @@ std::pair<int, int> graf::BFS_darb(int start){
 
     return std::make_pair(diametru, dest);
 }
+
+//O(n)
+// doua parcurgeri, prima din nodul 0 si a 2a din ultimul nod in care a ajuns prima parcurgere
 
 void graf::solve_darb() {
     std::ifstream f("darb.in");
@@ -883,6 +918,10 @@ int graf::BFS_maxflow(int start, int dest, std::vector<int> &tata, std::vector<s
     return 0;
 }
 
+//O( n * m^2) (Edmonds-Karp)
+// verificam fluxuri noi cu un bfs
+// adaugam acest flux la cele gasite si actualizam matricea de capacitate
+
 void graf::solve_maxflow() {
     std::ifstream f("maxflow.in");
     std::ofstream fg("maxflow.out");
@@ -933,7 +972,7 @@ void graf::solve_maxflow() {
 int main() {
     graf g;
 
-    g.solve_bfs();
+    g.solve_biconex();
 
     return 0;
 }
