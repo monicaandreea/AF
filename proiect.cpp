@@ -3,6 +3,7 @@
 #include<vector>
 #include<map>
 #include<queue>
+#include<algorithm>
 
 int n, m, a, b,c, s;
 
@@ -26,6 +27,9 @@ public:
     void solve_royfloyd();
     void solve_darb();
     void solve_maxflow();
+    void solve_euler();
+    void solve_hamilton();
+    void solve_cuplaj();
 
 private:
     void new_mat( int nod1, int nod2);
@@ -72,6 +76,11 @@ private:
 
     void kruskal(std::vector<std::pair<int, std::pair<int, int>>> &apm,
             std::vector<std::pair<int, std::pair<int, int>>> &muchii, int &sum);
+
+    int hamilton(int conf, int stop, std::vector<std::vector<int>> &cost, int C[262150][20]);
+
+    int BFS_cuplaj(int start, int dest, std::vector<int> &tata, std::vector<std::vector<int>> &cap);
+
 
 };
 
@@ -969,10 +978,212 @@ void graf::solve_maxflow() {
 
 }
 
+
+void graf::solve_euler() {
+    std::ifstream f("ciclueuler.in");
+    std::ofstream fg("ciclueuler.out");
+
+    f>>n>>m;
+
+    std::stack<int> s;
+    std::vector<std::pair<int, int>> muchie;
+    std::vector<bool> used;
+    std::vector<int> l;
+    std::vector<int> rez;
+    int start=0;
+    int dest=n-1;
+
+    for(auto i = 0; i<n ; i++){
+        lista.push_back(l);
+    }
+
+    for(auto i = 0; i<m ; i++){
+        used.push_back(false);
+    }
+
+    for( int i=0 ; i<m ; i++){
+        f>>a>>b;
+        lista[a-1].push_back(i);
+        lista[b-1].push_back(i);
+        muchie.push_back(std::make_pair(a-1, b-1));
+    }
+
+    s.push(0);
+
+    while( !s.empty()){
+        int nod = s.top();
+        //std::cout<<nod<<" este nodul meu\n";
+
+        if(!lista[nod].empty()){
+            int m_cnt = lista[nod].back();
+            lista[nod].pop_back();
+            //std::cout<<"muchia cu nr "<<m_cnt<<"\n";
+
+            if(!used[m_cnt]){
+                used[m_cnt] = true;
+                int vecin;
+                if(  nod == muchie[m_cnt].first) vecin = muchie[m_cnt].second;
+                else vecin = muchie[m_cnt].first;
+                s.push(vecin);
+                //std::cout<<"vecinul "<<vecin<<" \n";
+            }
+        } else {
+            s.pop();
+            //std::cout<<"am adaugat in ciclu "<<nod<<"\n\n\n";
+            rez.push_back(nod);
+        }
+    }
+
+    for(int i=0 ; i< rez.size() -1 ; i++)
+        fg<<rez[i] + 1<< " ";
+
+}
+
+int graf::hamilton(int conf, int stop, std::vector<std::vector<int>> &cost, int C[262150][20]){
+    //std::cout<<C[conf][stop]<<" "<<conf<<" "<<stop<<"\n";
+    if(C[conf][stop] == -1){
+        C[conf][stop]  = INT_MAX/2;
+        for( size_t i=0 ; i< lista[stop].size() ; i++){
+            //std::cout<<lista[stop][i]<<"\n";
+            if( conf & (1<<lista[stop][i])){ // apartine lantului
+                if( lista[stop][i] == 0 && conf != (1<<(stop)) + 1) continue;
+
+                C[conf][stop] = std::min(C[conf][stop], hamilton(conf ^ (1<<stop), lista[stop][i], cost, C) + cost[lista[stop][i]][stop]); //verifica ciclu fara stop
+            }
+        }
+    }
+
+    return C[conf][stop];
+}
+
+void graf::solve_hamilton() {
+    std::ifstream f("hamilton.in");
+    std::ofstream fg("hamilton.out");
+
+    f>>n>>m;
+
+    std::stack<int> s;
+    std::vector<int> v;
+    std::vector<int> l(n,INT_MAX/2);
+    std::vector<int> lc(n,-1);
+    std::vector<std::vector<int>> cost;
+    int C[262150][20];
+    int rez = INT_MAX;
+
+    for(auto i = 0; i<n ; i++){
+        lista.push_back(v);
+        cost.push_back(l);
+    }
+
+    for( int i=0 ; i<m ; i++){
+        f>>a>>b>>c;
+        new_lista_orientat(b, a);
+        cost[a][b] = c;
+    }
+
+    memset(C, -1, sizeof(C));
+    C[1][0] = 0;
+
+    for(size_t i = 0 ; i<lista[0].size() ; i++){
+        rez = std::min( rez, hamilton((1<<n)-1, lista[0][i] , cost, C) + cost[lista[0][i]][0]);
+    }
+
+    if(rez !=INT_MAX) fg<<rez;
+    else fg<<"Nu exista solutie";
+
+    /*for(int i=0 ; i<35 ; i++){
+        for(int j=0 ; j<n ; j++){
+            std::cout<<C[i][j]<<" ";
+        }
+        std::cout<<"\n";
+    }*/
+
+}
+
+
+int graf::BFS_cuplaj(int start, int dest, std::vector<int> &tata, std::vector<std::vector<int>> &cap){
+    std::queue<std::pair<int, int>> coada;
+    for(int i=0 ; i<n ; i++){
+        tata[i] = -1;
+    }
+
+    tata[start] = -2;
+
+    coada.push(std::make_pair(start, INT_MAX));
+
+    while(!coada.empty()){
+
+        int nod = coada.front().first;
+        int flux = coada.front().second;
+        coada.pop();
+
+        for(auto vecin = lista[nod].begin(); vecin != lista[nod].end(); vecin++){
+            //std::cout<<nod<<" "<<*vecin<<" "<<cap[nod][*vecin]<<"\n";
+            if( tata[*vecin] == -1 && cap[nod][*vecin] >0){
+                tata[*vecin] = nod;
+
+                int flux_nou = std::min(flux, cap[nod][*vecin]);
+
+                if( *vecin == dest) return flux_nou;
+
+                coada.push(std::make_pair(*vecin, flux_nou));
+            }
+        }
+    }
+    return 0;
+}
+
+void graf::solve_cuplaj() {
+    std::ifstream f("cuplaj.in");
+    std::ofstream fg("cuplaj.out");
+
+    f>>n>>m;
+
+    std::vector<std::vector<int> > cap;
+    std::vector<int> tata(n,0);
+    std::vector<int> v(n,0);
+    std::vector<int> l;
+    int start=0;
+    int dest=n-1;
+
+    for(auto i = 0; i<n ; i++){
+        lista.push_back(l);
+        cap.push_back(v);
+    }
+
+    for( int i=0 ; i<m ; i++){
+        f>>a>>b>>c;
+        lista[a-1].push_back(b-1);
+        cap[a-1][b-1] = c;
+    }
+
+    int flux = 0;
+
+    int flux_nou = BFS_maxflow(start, dest, tata, cap);
+    while(flux_nou){
+
+        flux += flux_nou;
+        int nod = dest;
+
+        while(nod != start){
+            int t = tata[nod];
+            cap[t][nod] -= flux_nou; //actualizezi flowul gasit  + muchiile de intoarcere
+            cap[nod][t] += flux_nou;
+            nod = t;
+        }
+
+
+        flux_nou = BFS_maxflow(start, dest, tata, cap);
+    }
+
+    fg<<flux;
+
+}
+
 int main() {
     graf g;
 
-    g.solve_biconex();
+    g.solve_hamilton();
 
     return 0;
 }
